@@ -1,15 +1,13 @@
 # ESSN project R scripts
 
-## Architecture of the project
- ESSN
+## Architecture of the ESSN file project
   - Data
     - Source [contains source ESSN data as downloaded from server]
       - Eligible Households
       - Ineligible households
-      - ELigible Individuals
+      - Eligible Individuals
       - Ineligible Individuals
    - Scripts [Scripts of the R project, ESSN_study_scripts repository needs to be cloned] 
   
-
 
 
