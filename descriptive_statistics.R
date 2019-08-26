@@ -190,3 +190,29 @@ plot <- ggplot(d) + aes(x=age, shape=cat) +
 ggsave(filename = paste(outputs_graph_path, 'marriage_age.png', sep='/'), plot,
        width = 8, height = 5, dpi = 300, units = "in", device='png')
 
+##### Eligible families by province
+
+source(paste(tools, 'map.R', sep=''))
+
+data_el <- ie %>%
+  dplyr::group_by(province_id) %>%
+  dplyr::summarise(eligible_individuals = n())
+
+df <- data_frame(id=rownames(TUR@data), province_id=TUR@data$ID_1, ) %>%
+  left_join(data_el, by='province_id')
+
+
+TUR_fixed <- fortify(TUR)
+
+final_map <- left_join(TUR_fixed, df, by = 'id')
+
+ggplot(final_map) +
+  geom_polygon( aes(x = long, y = lat, group = group, fill = eligible_individuals),
+                color = 'grey') +
+  #  coord_map() +
+  theme_void() + 
+  labs(title = 'Number of eligible individuals by province') +
+  scale_fill_distiller(name = 'Number of idv.',
+                       palette = 'Spectral', limits = c(0,200000), na.value = 'grey') +
+  theme(plot.title = element_text(hjust = 0.5))
+
