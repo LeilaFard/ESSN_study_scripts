@@ -11,7 +11,7 @@ setwd(project_path)
 
 data_path = './Data/Source/'
 processed_data_path = './Data/Processed/'
-scripts_path = './Scripts/ESSN_project/'
+scripts_path = './Scripts/ESSN_study_scripts/'
 tools = paste(scripts_path, 'Tools/', sep='')
 prerequisites = paste(scripts_path, 'Prerequisites/', sep='')
 

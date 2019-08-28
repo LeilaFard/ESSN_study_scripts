@@ -14,7 +14,6 @@ regions = merge(table_regions, regions, by='national_code', all=TRUE)
 
 rm(table_regions, url, page)
 
-regions <- setNames(regions ,c('national_code', 'reg', 'province_id', 'names'))
+regions <- setNames(regions ,c('national_code', 'Reg', 'province_id', 'names'))
   
-
-
+saveRDS(regions, file = './Data/Processed/regions.rds')
