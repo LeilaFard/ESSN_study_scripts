@@ -23,8 +23,8 @@ dir.create(outputs_matching, recursive=TRUE)
 
 data <- matching_data_preprocess(year, month)
 
-data_ <- data
-#data_ <- data[sample(nrow(data), (nrow(data)/10)),]
+#data_ <- data
+data_ <- data[sample(nrow(data), (nrow(data)/10)),]
 
 
 ######### I - MODEL SPECIFICATION
@@ -33,11 +33,12 @@ data_ <- data
 
 m_ps <- glm(eligible ~ AC_1 + AC_6 + 
               months_since_application +  nat_country + Reg +
-              AG_1 + AG_2 + AG_3 + AG_4 + AG_5 +
-              age_main_resp + gender_main_resp,
+              AG_1 + AG_2 + AG_3 + AG_4 + AG_5, 
+            #+ age_group_main_resp + gender_main_resp,
             family=binomial(link='logit'), data = data_)
 out.tex = xtable(m_ps)
 print(out.tex, type='latex', file=paste(outputs_matching, 'logit_full_df.tex', sep='/'), compress = FALSE) 
+rm(out.tex)
 prs_df <- data.frame(pr_score = predict(m_ps, type = 'response'),
                      eligible = m_ps$model$eligible,
                      AC_1 = m_ps$model$AC_1,
@@ -49,12 +50,12 @@ prs_df <- data.frame(pr_score = predict(m_ps, type = 'response'),
                      AG_2 = m_ps$model$AG_2, 
                      AG_3 = m_ps$model$AG_3,
                      AG_4 = m_ps$model$AG_4,
-                     AG_5 = m_ps$model$AG_5,
-                     age_main_resp = m_ps$model$age_main_resp,
-                     gender_main_resp = m_ps$model$gender_main_resp
+                     AG_5 = m_ps$model$AG_5
+                     #age_group_main_resp = m_ps$model$age_group_main_resp
+                     #gender_main_resp = m_ps$model$gender_main_resp
 )
 labs <- paste('Eligibility status:', c('Eligible', 'Ineligible'))
-plot = prs_df %>%
+plot <- prs_df %>%
           mutate(eligible = ifelse(eligible == 1, labs[1], labs[2])) %>%
           ggplot(aes(x = pr_score)) +
           geom_histogram(color = 'white') +
@@ -69,15 +70,16 @@ ggsave(filename = paste(outputs_matching, 'ps_score_full_df.png', sep='/'), plot
 data_trim = prs_df[which(prs_df$pr_score<0.99),]
 m_ps_trim <- glm(eligible ~ AC_1 + AC_6 + 
                    months_since_application +  nat_country + Reg +
-                   AG_1 + AG_2 + AG_3 + AG_4 + AG_5 +
-                   age_main_resp + gender_main_resp,
+                   AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
+                 #+ age_group_main_resp + gender_main_resp,
                  family=binomial(link='logit'), data = data_trim)
 
 out.tex = xtable(m_ps)
 print(out.tex, type='latex', file=paste(outputs_matching, 'logit_trimmed_df.tex', sep='/'), compress = FALSE) 
+rm(out.tex)
 prs_df_trim <- data.frame(pr_score = predict(m_ps_trim, type = 'response'),
                           eligible = m_ps_trim$model$eligible)
-plot = prs_df_trim %>%
+plot <- prs_df_trim %>%
           mutate(eligible = ifelse(eligible==1, labs[1], labs[2])) %>%
           ggplot(aes(x = pr_score)) +
           geom_histogram(color = 'white') +
@@ -89,9 +91,18 @@ ggsave(filename = paste(outputs_matching, 'ps_score_trimmed_df.png', sep='/'), p
 
 
 ######### II - MATCHING
-
 mod_match <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 + age_main_resp + gender_main_resp,
-                     method = 'nearest', data = data_trim) #, replace=TRUE
+                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
+                       method = 'nearest', data = data_trim, replace=TRUE) 
 
+# Post processing
+summary(mod_match)
 
+#QQplot
+plot(mod_match, type='QQ')
+#Histogram
+plot(mod_match, type='hist')
+
+# 
+m_data <-  match.data(mod_match)
+saveRDS(m_data, file = paste(outputs_matching, 'matched_data.rds', sep='/'))

@@ -25,17 +25,7 @@ nat_hh_head <- function(df_i, df_h){
   return(df_h)
 }
 
-# 2 - Gender and age of respondent
-
-age_and_gender_hh_head <- function(df_i, df_h){
-  gender_and_age <- plyr::rename(df_i[which(df_i$main_applicant_flag==1), c('assistance_no', 'gender', 'age')],
-                                 c('gender'='gender_main_resp', 'age'='age_main_resp'))
-  df_h <- merge(x=df_h, y=gender_and_age, by='assistance_no', all.x=TRUE)
-  return(df_h)
-}
-
-
-# 3 - Number of hh members by age groups
+# 2 - Number of hh members by age groups
 # TODO : see pb of ages up to 221
 get_age_groups <- function(df){
   df[['age_group']] <- cut(df$age, c(0, 10, 18, 45, 60, 300), right=FALSE, labels=FALSE)
@@ -57,10 +47,22 @@ age_groups_hh <- function(df_i, df_h){
 }
 
 
+# 3 - Gender and age of respondent
+
+age_and_gender_hh_head <- function(df_i, df_h){
+  df_i[['age_group']] <- cut(df_i$age, c(0, 10, 18, 45, 60, 300), right=FALSE, labels=FALSE)
+  gender_and_age <- plyr::rename(df_i[which(df_i$main_applicant_flag==1), c('assistance_no', 'gender', 'age_group')],
+                                 c('gender'='gender_main_resp', 'age_group'='age_group_main_resp'))
+  df_h <- merge(x=df_h, y=gender_and_age, by='assistance_no', all.x=TRUE)
+  return(df_h)
+}
+
+
+
 # 4 - Global function
 
 get_individual_data_informations <- function(df_i, df_h){
-  return(age_groups_hh(df_i, age_and_gender_hh_head(df_i, nat_hh_head(df_i, df_h))))
+  return(age_and_gender_hh_head(df_i, age_groups_hh(df_i, nat_hh_head(df_i, df_h))))
 }
 
 
@@ -126,8 +128,9 @@ matching_data_preprocess <- function(year, month){
             'months_since_application', 
             'nat_country',
             'AG_1', 'AG_2', 'AG_3', 'AG_4', 'AG_5',
-            'age_main_resp',
-            'gender_main_resp')
+            'age_group_main_resp'
+            #'gender_main_resp'
+            )
   
   return(rbind(he[, vars], hi[,vars]))
 }
