@@ -23,8 +23,8 @@ dir.create(outputs_matching, recursive=TRUE)
 
 data <- matching_data_preprocess(year, month)
 
-#data_ <- data
-data_ <- data[sample(nrow(data), (nrow(data)/10)),]
+data_ <- data
+#data_ <- data[sample(nrow(data), (nrow(data)/10)),]
 
 
 ######### I - MODEL SPECIFICATION
@@ -34,7 +34,7 @@ data_ <- data[sample(nrow(data), (nrow(data)/10)),]
 m_ps <- glm(eligible ~ AC_1 + AC_6 + 
               months_since_application +  nat_country + Reg +
               AG_1 + AG_2 + AG_3 + AG_4 + AG_5, 
-            #+ age_group_main_resp + gender_main_resp,
+            #+ gender_main_resp,
             family=binomial(link='logit'), data = data_)
 out.tex = xtable(m_ps)
 print(out.tex, type='latex', file=paste(outputs_matching, 'logit_full_df.tex', sep='/'), compress = FALSE) 
@@ -106,3 +106,24 @@ plot(mod_match, type='hist')
 # 
 m_data <-  match.data(mod_match)
 saveRDS(m_data, file = paste(outputs_matching, 'matched_data.rds', sep='/'))
+
+
+## Stratified
+mod_match2 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
+                     method = 'subclass', data = data_trim, subclass=10) 
+# Post processing
+summary(mod_match2)
+#Histogram
+plot(mod_match2, type='hist')
+
+# TODO: use t-tests within each strata to test if the distribution of X-variables is the same within both groups 
+
+## Increase ratio -> bias/variance to compennsate replacement
+mod_match3 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
+                     method = 'nearest', data = data_trim, replace=TRUE, ratio=2) 
+# Post processing
+summary(mod_match3)
+#Histogram
+plot(mod_match3, type='hist')
