@@ -16,8 +16,10 @@ source(paste(tools, 'stats_des_preprocess.R', sep='/'))
 year = 2018
 month = 4
 
+
 outputs_graph_path = paste('./Outputs/Plots', year, month, sep='/')
 outputs_tables_path = paste('./Outputs/Tables', year, sep='/')
+
 dir.create(outputs_graph_path, recursive=TRUE)
 dir.create(outputs_tables_path, recursive=TRUE)
 
@@ -184,7 +186,7 @@ data_el <- ie %>%
   dplyr::summarise(eligible_individuals = n())
 
 df <- data_frame(id=rownames(TUR@data), province_id=TUR@data$ID_1, ) %>%
-  left_join(data_el, by='province_id')
+      left_join(data_el, by='province_id')
 
 
 TUR_fixed <- fortify(TUR)
