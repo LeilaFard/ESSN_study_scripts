@@ -91,39 +91,31 @@ ggsave(filename = paste(outputs_matching, 'ps_score_trimmed_df.png', sep='/'), p
 
 
 ######### II - MATCHING
-mod_match <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
-                       method = 'nearest', data = data_trim, replace=TRUE) 
-
-# Post processing
-summary(mod_match)
-
-#QQplot
-plot(mod_match, type='QQ')
-#Histogram
-plot(mod_match, type='hist')
-
-# 
-m_data <-  match.data(mod_match)
-saveRDS(m_data, file = paste(outputs_matching, 'matched_data.rds', sep='/'))
 
 
 ## Stratified
-mod_match2 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
-                     method = 'subclass', data = data_trim, subclass=10) 
+mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit',
+                           method = 'subclass', data = data_trim, subclass=10) 
 # Post processing
-summary(mod_match2)
+summary(mod_match_strat)
 #Histogram
-plot(mod_match2, type='hist')
+plot(mod_match_strat, type='hist')
+#plot(mod_match_strat, type='QQ')
+
+
+
+## Increase ratio -> bias/variance to compennsate replacement
+mod_match_2NN <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                         AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                         method = 'nearest', data = data_trim, replace=TRUE, ratio=2) 
+# Post processing
+summary(mod_match_2NN)
+#Histogram
+plot(mod_match_2NN, type='hist')
+plot(mod_match_2NN, type='QQ')
+
 
 # TODO: use t-tests within each strata to test if the distribution of X-variables is the same within both groups 
 
-## Increase ratio -> bias/variance to compennsate replacement
-mod_match3 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,
-                     method = 'nearest', data = data_trim, replace=TRUE, ratio=2) 
-# Post processing
-summary(mod_match3)
-#Histogram
-plot(mod_match3, type='hist')
+
