@@ -57,21 +57,6 @@ ggsave(filename = paste(outputs_graph_path, 'fertility_rate.png', sep='/'), plot
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
 
 #
-#  FERTILITY (2) : ADDITIONAL CHILDREN DURING A GIVEN TIME PERIOD
-###################################################################
-## TODO REPRENDRE LES NAISSANCES
-births <- readRDS(paste('./Data/Processed/births_', year, '_', month,'.rds', sep=''))
-births <- births[, c('assistance_no', paste('births', year, month, sep='_'))]
-#births <- plyr::rename(births, c(paste('births', year, month, sep='_') = 'birth'))
-he <- merge(he, births, by='assistance_no', all.x=TRUE)
-hi <- merge(hi, births, by='assistance_no', all.x=TRUE)
-births_y <- data.frame(count(births[[paste('births', year, month, sep='_')]]))
-n_births <- sum(births_y$x*births_y$freq)
-
-iff_i <- ii[which(ii$gender=='female' & ii$age>=15 & ii$age<45),]
-nrow(iff_i)
-
-#
 #  INTERVALLE INTERGENESIQUE
 ##############################
 
@@ -206,13 +191,34 @@ TUR_fixed <- fortify(TUR)
 
 final_map <- left_join(TUR_fixed, df, by = 'id')
 
-ggplot(final_map) +
-  geom_polygon( aes(x = long, y = lat, group = group, fill = eligible_individuals),
-                color = 'grey') +
-  #  coord_map() +
-  theme_void() + 
-  labs(title = 'Number of eligible individuals by province') +
-  scale_fill_distiller(name = 'Number of idv.',
-                       palette = 'Spectral', limits = c(0,200000), na.value = 'grey') +
-  theme(plot.title = element_text(hjust = 0.5))
+p <-  ggplot(final_map) +
+      geom_polygon( aes(x = long, y = lat, group = group, fill = eligible_individuals),
+                    color = 'grey') +
+      coord_map() +
+      theme_void() + 
+      labs(title = 'Number of eligible individuals by province') +
+      scale_fill_distiller(name = 'Number of idv.',
+                           palette = 'Spectral', limits = c(0,200000), na.value = 'grey') +
+      theme(plot.title = element_text(hjust = 0.5))
+
+ggsave(filename = paste(outputs_graph_path, 'map_eligibles.png', sep='/'), p,
+       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
+# More on maps
+#https://web.stanford.edu/~kjytay/courses/stats32-aut2018/Session%207/Session_7_Code.html
+  
+#  OLD
+#  FERTILITY (2) : ADDITIONAL CHILDREN DURING A GIVEN TIME PERIOD
+###################################################################
+## TODO REPRENDRE LES NAISSANCES
+#births <- readRDS(paste('./Data/Processed/births_', year, '_', month,'.rds', sep=''))
+#births <- births[, c('assistance_no', paste('births', year, month, sep='_'))]
+#births <- plyr::rename(births, c(paste('births', year, month, sep='_') = 'birth'))
+#he <- merge(he, births, by='assistance_no', all.x=TRUE)
+#hi <- merge(hi, births, by='assistance_no', all.x=TRUE)
+#births_y <- data.frame(count(births[[paste('births', year, month, sep='_')]]))
+#n_births <- sum(births_y$x*births_y$freq)
+
+#iff_i <- ii[which(ii$gender=='female' & ii$age>=15 & ii$age<45),]
+#nrow(iff_i)
 

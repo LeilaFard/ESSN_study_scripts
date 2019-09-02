@@ -1,4 +1,6 @@
 # ESSN project R scripts
+ Project under R version 3.6.1 
+
 
 ## Architecture of the ESSN file project
   - Data
