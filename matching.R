@@ -92,11 +92,10 @@ ggsave(filename = paste(outputs_matching, 'ps_score_trimmed_df.png', sep='/'), p
 
 ######### II - MATCHING
 
-
 ## Stratified
 mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
                              AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit',
-                           method = 'subclass', data = data_trim, subclass=10) 
+                           method = 'subclass', data = data_trim, subclass=16) 
 # Post processing
 summary(mod_match_strat)
 #Histogram
