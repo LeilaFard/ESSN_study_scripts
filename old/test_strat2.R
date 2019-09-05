@@ -51,6 +51,8 @@ prs_df <- data.frame(pr_score = predict(m_ps, type = 'response'),
 # 2 - Trimming 
 data_trim = prs_df[which(prs_df$pr_score<0.99),]
 
+
+######### II -Stratification of data_trim
 block_stats <- function(data, j, block_statistics, blocks){
   N_c_j = sum((1-data$treat)*(data$strat==j)) 
   N_t_j = sum((data$treat)*(data$strat==j)) 
@@ -91,9 +93,6 @@ adequate <- function(n, stats, len_coefs){ #adequate <- function(j, stats, coeff
   return(adequate)
 }
 
-
-######### II -Stratification of data_trim
-
 # Init : 2 blocks
 blocks = c(0,1)
 
@@ -121,10 +120,9 @@ data_trim[['strat2']] = 0
 
 while (0 %in% adeq){
   
-  for (i in n){
+  for (i in 1:n){
     
     if (adeq[i]==0){
-      
       df <- data_trim[which(data_trim$strat==i),]
       med = median(df$pr_score)
       df[which(df$pr_score>=med), 'strat2'] = 1
@@ -141,6 +139,7 @@ while (0 %in% adeq){
   data_trim$strat2 <- 0
   
   n <- length(blocks) - 1
+  print(n)
   
   statistics <- list('t'=rep(0,n), 'N_min_t'=rep(0,n), 'N_min_c'=rep(0,n), 'N_max_t'=rep(0,n), 'N_max_c'=rep(0,n))
   
@@ -149,7 +148,9 @@ while (0 %in% adeq){
   }
   
   adeq <- adequate(n, stats=statistics, len_coefs=18)
+  print(adeq)
   
 }
 
+#out = 220 classes
 
