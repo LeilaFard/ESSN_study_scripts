@@ -23,8 +23,8 @@ dir.create(outputs_matching, recursive=TRUE)
 
 data <- matching_data_preprocess(year, month)
 
-data_ <- data
-#data_ <- data[sample(nrow(data), (nrow(data)/10)),]
+#data_ <- data
+data_ <- data[sample(nrow(data), (nrow(data)/10)),]
 
 
 ######### I - MODEL SPECIFICATION

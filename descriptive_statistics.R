@@ -181,34 +181,128 @@ ggsave(filename = paste(outputs_graph_path, 'marriage_age.png', sep='/'), plot,
 
 source(paste(tools, 'map.R', sep=''))
 
-data_el <- ie %>%
+data_e <- he %>%
   dplyr::group_by(province_id) %>%
-  dplyr::summarise(eligible_individuals = n())
+  dplyr::summarise(eligible_hh = n())
 
-df <- data_frame(id=rownames(TUR@data), province_id=TUR@data$ID_1, ) %>%
-      left_join(data_el, by='province_id')
+data_i <- hi %>%
+  dplyr::group_by(province_id) %>%
+  dplyr::summarise(ineligible_hh = n())
 
+data_ <- merge(data_e, data_i, by='province_id')
+data_[['proportion_eligibles']] = data_$eligible_hh / (data_$eligible_hh + data_$ineligible_hh)
+data_[['number_registered']] = data_$eligible_hh + data_$ineligible_hh
+
+df <- data_frame(id=rownames(TUR@data), province_id=TUR@data$ID_1) %>%
+      left_join(data_, by='province_id')
 
 TUR_fixed <- fortify(TUR)
 
 final_map <- left_join(TUR_fixed, df, by = 'id')
 
 p <-  ggplot(final_map) +
-      geom_polygon( aes(x = long, y = lat, group = group, fill = eligible_individuals),
-                    color = 'grey') +
-      coord_map() +
-      theme_void() + 
-      labs(title = 'Number of eligible individuals by province') +
-      scale_fill_distiller(name = 'Number of idv.',
-                           palette = 'Spectral', limits = c(0,200000), na.value = 'grey') +
+      geom_polygon( aes(x = long, y = lat, group = group, fill = proportion_eligibles), color = 'grey') +
+      coord_map() + theme_void() + 
+      labs(title = 'Proportion of registered households households by province') +
+      scale_fill_distiller(name = 'Number of hh', palette = 'Spectral', limits = c(0,1), na.value = 'grey') +
       theme(plot.title = element_text(hjust = 0.5))
 
-ggsave(filename = paste(outputs_graph_path, 'map_eligibles.png', sep='/'), p,
+ggsave(filename = paste(outputs_graph_path, 'map_number_registered.png', sep='/'), p,
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
+p <-  ggplot(final_map) +
+      geom_polygon( aes(x = long, y = lat, group = group, fill = number_registered), color = 'grey') +
+      coord_map() + theme_void() + 
+      labs(title = 'Number of registered households by province') +
+      scale_fill_distiller(name = 'Number of hh', palette = 'Spectral', limits = c(0,62000), na.value = 'grey') +
+      theme(plot.title = element_text(hjust = 0.5))
+
+ggsave(filename = paste(outputs_graph_path, 'map_number_registered.png', sep='/'), p,
+       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
 
 # More on maps
 #https://web.stanford.edu/~kjytay/courses/stats32-aut2018/Session%207/Session_7_Code.html
   
+
+#  
+#  Origines ethniques
+###################################################################
+
+# TODO fonction copiée de matching preprocess -> la passer dans format_data !!
+
+ggsave(filename = paste(outputs_graph_path, 'nat_eligibles.png', sep='/'), nat_pie_chart(ie),
+       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
+ggsave(filename = paste(outputs_graph_path, 'nat_ineligibles.png', sep='/'), nat_pie_chart(ii),
+       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
+#  
+#  Origines ethniques et  nombre d'enfants
+#
+###################################################################
+# TODO: reprendre
+
+nat_hh_head <- function(df_i, df_h){
+  nat <- df_i[which(df_i$main_applicant_flag==1), c('assistance_no', 'nationality_id')]
+  df_h <- add_nationality(merge(x=df_h, y=nat, by='assistance_no', all.x=TRUE))
+  return(df_h)
+}
+
+children_by_nat <- function(hi, he, ii, ie){
+  he <- nat_hh_head(ie, he)
+  he[['num_children']] <- he$num_male_children + he$num_female_children
+  hi <- nat_hh_head(ii, hi)
+  hi[['num_children']] <- hi$num_male_children + hi$num_female_children
+  hh <- rbind(he[,c('nat_country', 'num_children')], hi[,c('nat_country', 'num_children')])
+  
+  return(data.frame(table(hh$nat_country, hh$num_children)))
+}
+
+data <- children_by_nat(hi, he, ii, ie)
+
+p <- ggplot(data=data, aes(x=Var2, y=Freq, fill=Var1)) + 
+      geom_bar(stat='identity', position=position_dodge()) +
+     scale_fill_manual('Nationality', values=c( '#D16103',  '#52854C', '#4E84C4', '#C4961A'))+
+      labs(title = '', x= '', y = 'Frequency' ) + 
+      theme_light()
+
+#
+#   Months since application
+#
+###################################################################
+
+months_since_application <- function(df_h){
+  df_h$date <- lubridate::ymd(paste(year, month, '01', sep='/'))
+  df_h$months_since_application <- lubridate::interval(df_h$application_date, df_h$date) %/% months(1)
+  df_h$date = NULL
+  return(df_h)
+}
+
+he <- months_since_application(he)
+hi <- months_since_application(hi)
+
+d_e <- data.frame(table(he$months_since_application))
+d_e[['eligible']] = 'eligible'
+d_i <- data.frame(table(hi$months_since_application))
+d_i[['eligible']] = 'ineligible'
+d  <- rbind(d_e, d_i)
+rm(d_e, d_i)
+
+p <- ggplot(data=d, aes(x=Var1, y=Freq, fill=eligible)) + 
+      geom_bar(stat='identity', position=position_dodge()) +
+      scale_fill_manual('Eligibility', values=c('grey','black'), labels=c('Eligible', 'Ineligible'))+
+      labs(title = 'Months since first application by eligible status', x= 'Months since first application', y = 'Number of housholds' ) + 
+      theme_light()
+
+
+ggsave(filename = paste(outputs_graph_path, 'months_since_application.png', sep='/'), p,
+       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
+
+
+
+
 #  OLD
 #  FERTILITY (2) : ADDITIONAL CHILDREN DURING A GIVEN TIME PERIOD
 ###################################################################

@@ -1,5 +1,9 @@
-# https://sejdemyr.github.io/r-tutorials/statistics/tutorial8.html
-# https://gking.harvard.edu/matchit
+##
+##      TEST ON BLOCKING 
+##      Matching Methods in Practicee: Three examples, Guido W. Imbens, 2014 (IZA DP No. 8049)
+##      section 5.3
+##
+
 
 remove(list = ls())
 
@@ -44,8 +48,6 @@ prs_df <- data.frame(pr_score = predict(m_ps, type = 'response'),
                      AG_3 = m_ps$model$AG_3,
                      AG_4 = m_ps$model$AG_4,
                      AG_5 = m_ps$model$AG_5)
-
-
 
 
 # 2 - Trimming 

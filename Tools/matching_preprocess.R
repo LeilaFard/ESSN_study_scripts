@@ -12,7 +12,7 @@ add_nationality <- function(df){
   nationalities[['nat_country']] = 'Other'
   nationalities[which(nationalities$code=='AF'), 'nat_country'] = 'Afghanistan'
   nationalities[which(nationalities$code=='IQ'), 'nat_country'] = 'Iraq'
-  nationalities[which(nationalities$code=='IR'), 'nat_country'] = 'Iran'
+#  nationalities[which(nationalities$code=='IR'), 'nat_country'] = 'Iran'
   nationalities[which(nationalities$code=='SY'), 'nat_country'] = 'Syria'
   nationalities <- setNames(nationalities,c('nationality_id', 'name', 'code', 'mernis_code', 'active', 'nat_country'))
   df <- merge(x=df, y=nationalities[,c('nationality_id', 'nat_country')], all.x=TRUE)
