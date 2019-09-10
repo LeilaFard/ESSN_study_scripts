@@ -30,6 +30,16 @@ ie <- read_individual_data(year, month, 'eligible')
 he <- read_household_data(year, month, 'eligible')
 
 
+
+ac <- function(df){
+  tot <- df$AC_1 + df$AC_2 + df$AC_3 + df$AC_4 + df$AC_5 + df$AC_6 
+  tot <- tot[which(tot>1)]
+  return(length(tot)/nrow(df))
+}
+
+ac(he)
+ac(hi)
+
 #
 #  FERTILITY (1) :  OWN CHILDREN METHOD
 ############################################ 
@@ -203,11 +213,11 @@ final_map <- left_join(TUR_fixed, df, by = 'id')
 p <-  ggplot(final_map) +
       geom_polygon( aes(x = long, y = lat, group = group, fill = proportion_eligibles), color = 'grey') +
       coord_map() + theme_void() + 
-      labs(title = 'Proportion of registered households households by province') +
-      scale_fill_distiller(name = 'Number of hh', palette = 'Spectral', limits = c(0,1), na.value = 'grey') +
+      labs(title = 'Proportion of eligible households households by province') +
+      scale_fill_distiller(name = 'Number of hh', palette = 'Spectral', limits = c(0,0.80), na.value = 'grey') +
       theme(plot.title = element_text(hjust = 0.5))
 
-ggsave(filename = paste(outputs_graph_path, 'map_number_registered.png', sep='/'), p,
+ggsave(filename = paste(outputs_graph_path, 'map_proportion_eligibles.png', sep='/'), p,
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
 
 p <-  ggplot(final_map) +
@@ -221,6 +231,29 @@ ggsave(filename = paste(outputs_graph_path, 'map_number_registered.png', sep='/'
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
 
 
+data_ <- rbind(he[, c('province_id', 'num_male_children', 'num_female_children')], hi[, c('province_id', 'num_male_children', 'num_female_children')]) %>%
+     dplyr::group_by(province_id) %>%
+     dplyr::summarise(num_children = mean(num_male_children + num_female_children))
+
+data_$province_id = as.integer(data_$province_id)
+
+df <- data_frame(id=rownames(TUR@data), province_id=TUR@data$ID_1) %>%
+      left_join(data_, by='province_id')
+
+TUR_fixed <- fortify(TUR)
+
+final_map <- left_join(TUR_fixed, df, by = 'id')
+
+p <-  ggplot(final_map) +
+  geom_polygon( aes(x = long, y = lat, group = group, fill = num_children), color = 'grey') +
+  coord_map() + theme_void() + 
+  labs(title = 'Average number of children in a household, by province') +
+  scale_fill_distiller(name = 'Number of hh', palette = 'Spectral', limits = c(0,4), na.value = 'grey') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave(filename = paste(outputs_graph_path, 'map_children_by_hh.png', sep='/'), p,
+       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+
 # More on maps
 #https://web.stanford.edu/~kjytay/courses/stats32-aut2018/Session%207/Session_7_Code.html
   
@@ -229,12 +262,27 @@ ggsave(filename = paste(outputs_graph_path, 'map_number_registered.png', sep='/'
 #  Origines ethniques
 ###################################################################
 
-# TODO fonction copiée de matching preprocess -> la passer dans format_data !!
+nat_data <- function(df){
+  df <- add_nationality(df)
+  nat <- data.frame(table(df$nat_country))
+  nat[['Pct']] = 100 * (nat$Freq / sum(nat$Freq) )
+  return(nat)
+  }
 
-ggsave(filename = paste(outputs_graph_path, 'nat_eligibles.png', sep='/'), nat_pie_chart(ie),
-       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+df_e = nat_data(ie)
+df_i = nat_data(ii)
+df_e[['eligible']] = TRUE
+df_i[['eligible']] = FALSE
+df = rbind(df_e,df_i)
 
-ggsave(filename = paste(outputs_graph_path, 'nat_ineligibles.png', sep='/'), nat_pie_chart(ii),
+
+p <- ggplot() +
+     geom_bar(aes(y = Pct, x = eligible, fill = Var1), data = df,
+                 stat='identity')+
+     scale_fill_manual(values = c( '#D16103',  '#52854C', '#4E84C4', '#C4961A')) 
+
+
+ggsave(filename = paste(outputs_graph_path, 'nat.png', sep='/'), p,
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
 
 #  
@@ -299,8 +347,30 @@ p <- ggplot(data=d, aes(x=Var1, y=Freq, fill=eligible)) +
 ggsave(filename = paste(outputs_graph_path, 'months_since_application.png', sep='/'), p,
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
 
+#
+#   Acceptance criteria
+###########################################################################################
 
+AC_graph <- function(data_hh){
+  data <- setNames(data.frame((colSums(data_hh[,c('AC_1', 'AC_2', 'AC_3', 'AC_4', 'AC_5', 'AC_6')]) / nrow(data_hh))*100),
+                   c('Percentage'))
+  data[['AC']] <- rownames(data)
+  data[['mod']] <- 'Yes'
+  rownames(data) <- NULL
+  for (i in 1:6){
+    newline <- data.frame('Percentage'=100-data[i, 'Percentage'], 'AC'=paste('AC', i, sep='_'), 'mod'='No')
+    data <- rbind(data, newline)
+  }
+  p <- ggplot() + geom_bar(aes(y = Percentage, x = AC, fill=mod), data = data, stat='identity') + 
+       theme_light() + scale_fill_manual('', values=c('grey','black'), labels=c('No', 'Yes'))
+  return(p)
+}
 
+ggsave(filename = paste(outputs_graph_path, 'ac_eligibles.png', sep='/'), AC_graph(he),
+       width = 5, height = 5, dpi = 300, units = 'in', device='png')
+ 
+ggsave(filename = paste(outputs_graph_path, 'ac_ineligibles.png', sep='/'), AC_graph(hi),
+       width = 5, height = 5, dpi = 300, units = 'in', device='png')
 
 
 #  OLD

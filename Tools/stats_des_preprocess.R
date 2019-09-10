@@ -131,25 +131,3 @@ add_nationality <- function(df){
   return(df)
 }
 
-
-nat_pie_chart <- function(df){
-  df <- add_nationality(df)
-  nat <- data.frame(table(df$nat_country))
-  nat[['Pct']] = 100 * (nat$Freq / sum(nat$Freq) )
-  
-  p <- ggplot(nat, aes('', Pct, fill = Var1)) +
-        geom_bar(width = 1, size = 1, color = 'white', stat = 'identity') +
-        coord_polar('y') +
-        geom_text(aes(label = paste0(round(Pct,1), '%')), 
-                  position = position_stack(vjust = 0.5)) +
-        labs(x = NULL, y = NULL, fill = NULL, 
-             title = NULL) +
-        guides(fill = guide_legend(reverse = TRUE))  +
-        scale_fill_manual(values = c( '#D16103',  '#52854C', '#4E84C4', '#C4961A')) +
-        theme_classic() +
-        theme(axis.line = element_blank(),
-              axis.text = element_blank(),
-              axis.ticks = element_blank(),
-              plot.title = element_text(hjust = 0.5, color = "#666666"))
-  return(p)
-}
