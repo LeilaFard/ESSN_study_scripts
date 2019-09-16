@@ -72,10 +72,10 @@ intervalle_intergenesique <- function(df){
   ### BASE DES INDIVIDUS: ON SE RESTREINT AUX FAMILLES NUCLEAIRES
   #df <- read_individual_data(year, month, dataframe)
   #isolement des menages ou il y a une seule femme en age de procreer
-  df_ff<- df[which(df$gender=='female' & df$age>=15 & df$age<45),]
+  df_ff <- df[which(df$gender=='female' & df$age>=15 & df$age<45),]
   df_ffs <- df_ff[which(duplicated2(df_ff$assistance_no)==FALSE),]
   #on met en reserve les identifants menages ou il n' y a qu une seule femme en age fecond
-  no_hh <-  plyr::rename(data.frame(df_ffs$assistance_no), c('df_ffs.assistance_no'='assistance_no'))
+  no_hh <- plyr::rename(data.frame(df_ffs$assistance_no), c('df_ffs.assistance_no'='assistance_no'))
   
   ### Databases
   df_children <- merge(df, no_hh, by='assistance_no', all=FALSE)

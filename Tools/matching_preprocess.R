@@ -3,6 +3,18 @@ library(plyr)
 library(lubridate)
 
 
+#GENERIC 
+# TODO ne plus l'avoir en dupliqué
+
+# Fonction qui permet de reperer les doublons
+duplicated2 <- function(x){ 
+  if (sum(dup <- duplicated(x))==0) 
+    return(dup) 
+  if (class(x) %in% c('data.frame', 'matrix')) 
+    duplicated(rbind(x[dup,],x))[-(1:sum(dup))] 
+  else duplicated(c(x[dup],x))[-(1:sum(dup))] 
+}
+
 ######### I - FROM INDIVIDUAL DATABASES 
 
 # 1 - Nationality of household head
