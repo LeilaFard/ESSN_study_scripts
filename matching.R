@@ -1,3 +1,5 @@
+library(MatchIt)
+
 # https://sejdemyr.github.io/r-tutorials/statistics/tutorial8.html
 # https://gking.harvard.edu/matchit
 
@@ -7,67 +9,17 @@ path <- dirname(rstudioapi::getSourceEditorContext()$path)
 
 source(paste(path, 'settings.R', sep='/'))
 
-source(paste(tools, 'format_data.R', sep='/'))
-source(paste(tools, 'matching_preprocess.R', sep=''))
-
-library(stats)
-library(ggplot2)
-library(MatchIt)
-library(xtable)
-#library(MatchItSE) 
 
 year = 2018
 month = 4
 
+source(paste(tools, 'matching_preprocess.R', sep=''))
 
-print(paste(month, year, sep='/'))
+data_ <- full_preprocessed_dataset(year, month)
 
-#outputs_matching = paste('./Outputs/PsMatch', year, month, sep='/')
-outputs_matching = paste('./Outputs/PsMatch_test', year, month, sep='/')
-dir.create(outputs_matching, recursive=TRUE)
+source(paste(tools, 'plots_discarded_comp.R', sep='/'))
 
-
-unique_f <- function(year, month, status){
-  df_i <- read_individual_data(year, month, status)
-  
-  df_iff<- df_i[which(df_i$gender=='female' & df_i$age>=15 & df_i$age<45),]
-  iffs <- df_iff[which(duplicated2(df_iff$assistance_no)==FALSE),]
-  iffs <-  setNames(data.frame(iffs$assistance_no), c('assistance_no'))
-  
-  return(iffs)
-}
-
-unique_f_ids <- function(year, month){
-  fff_e <- unique_f(year, month, 'eligible')
-  fff_i <- unique_f(year, month, 'ineligible')
-  return(rbind(fff_i, fff_e))
-}
-
-data_unique_f_y0 <- merge(matching_data_preprocess(year, month), unique_f_ids(year, month), by='assistance_no', all.y=TRUE)
-data_unique_f_y1 <-  merge(matching_data_preprocess(year+1, month), unique_f_ids(year+1, month), by='assistance_no', all.y=TRUE)
-
-
-data_ <- data_unique_f_y0[which(data_unique_f_y0$assistance_no %in% data_unique_f_y1$assistance_no),]
-#data_ <- data[sample(nrow(data), (nrow(data)/10)),]
-
-births_y1 <- function(data){
-  ii <- read_individual_data(year+1, month, 'ineligible')
-  ie <- read_individual_data(year+1, month, 'eligible')
-  births_y1 <- rbind(ii[which(ii$assistance_no %in% data$assistance_no), c('assistance_no', 'age')],
-                     ie[which(ie$assistance_no %in% data$assistance_no), c('assistance_no', 'age')])
-  rm(ii, ie)
-  
-  births_y1 <- births_y1[which(births_y1$age == 0),]
-  births_y1[['birth_y1']] <- 1
-  data <- merge(data, births_y1[,c('assistance_no', 'birth_y1')], by='assistance_no', all=TRUE)
-  data[which(is.na(data$birth_y1)), 'birth_y1'] <- 0 
-  
-  return(data)
-}
-
-data_ <- births_y1(data_)
-# REMOVE MISSING VALUES
-data_ <- data_[complete.cases(data_), ]
+data_[['ineligible']] <- 1-data_$eligible
 
 # TODO: use t-tests within each strata to test if the distribution of X-variables is the same within both groups 
 
@@ -79,46 +31,98 @@ data_ <- data_[complete.cases(data_), ]
 
 ######### II - MATCHING
 
+
+
+## Increase ratio -> bias/variance to compennsate replacement
+mod_match_2NN_att <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                         AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                         method = 'nearest', data = data_, discard='both', reestimate=TRUE, 
+                         replace=TRUE, ratio=2) 
+
+mod_match_2NN_tnt <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                               AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                             method = 'nearest', data = data_, discard='both', reestimate=TRUE, 
+                             replace=TRUE, ratio=2) 
+
+
+
+# Post processing
+summary(mod_match_2NN_att)
+summary(mod_match_2NN_tnt)
+#Histogram
+plot(mod_match_2NN_att, type='hist')
+plot(mod_match_2NN_tnt, type='hist')
+#plot(mod_match_2NN, type='QQ')
+
+treat_effect <- function(match_outputs_2NN){
+  m.data_2NN <- match.data(match_outputs_2NN, distance ='pscore')
+  m.data_2NN['index'] <- rownames(m.data_2NN)
+  
+  matched_ids <- data.frame(match_outputs_2NN$match.matrix)
+  matched_ids['X0'] <- rownames(matched_ids)
+  
+  outcomes.0 <- setNames(m.data_2NN[, c('index', 'birth_y1')], c('X0', 'birth_y1.0'))
+  outcomes.1 <- setNames(m.data_2NN[, c('index', 'birth_y1')], c('X1', 'birth_y1.1'))
+  outcomes.2 <- setNames(m.data_2NN[, c('index', 'birth_y1')], c('X2', 'birth_y1.2'))
+  
+  matched_data <- merge(matched_ids, outcomes.0, by='X0', all.x=TRUE)
+  matched_data <- merge(matched_data, outcomes.1, by='X1', all.x=TRUE)
+  matched_data <- merge(matched_data, outcomes.2, by='X2', all.x=TRUE)
+  
+  matched_data <- matched_data[complete.cases(matched_data), ]
+  
+  matched_data[['teffect']] <- matched_data$birth_y1.0 - (1/2)*matched_data$birth_y1.1 - (1/2)*matched_data$birth_y1.2
+  print(paste('Mean = ', mean(matched_data$teffect)))
+  print(paste('Std = ', sd(matched_data$teffect)))
+  print(paste('IC = [', paste(quantile(matched_data$teffect, c(0.025, 0.975)), collapse=' ; '), ']', sep=''))
+}
+
+treat_effect(mod_match_2NN_att)
+treat_effect(mod_match_2NN_tnt)
+
+
+#### ADD REGRESSION
+
+
+
 ## Stratified
 mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                           AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit', method = 'subclass', 
-                           data = data_, subclass=16, discard='treat', reestimate=TRUE) 
+                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit', method = 'subclass', 
+                           data = data_, subclass=16, discard='both', reestimate=TRUE) 
+
 # Post processing
 summary(mod_match_strat)
 #Histogram
 plot(mod_match_strat, type='hist')
-#plot(mod_match_strat, type='QQ')
-z_out_strat <- zelig(birth_y1 ~ distance, 
-                     data = match.data(mod_match_strat, 'control'), 
-                     model = 'ls', by = 'subclass')
-x_out_strat <- setx(z_out_strat, data = match.data(mod_match_strat, 'treat'), fn = NULL, cond = TRUE)
-s_out_strat <- sim(z_out_strat, x = x_out_strat)
-summary(s_out_strat)
 
-## Increase ratio -> bias/variance to compennsate replacement
-mod_match_2NN <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                         AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
-                         method = 'nearest', data = data_, discard='treat', reestimate=TRUE, 
-                         replace=TRUE, ratio=2) 
+### Number of children
 
-# Post processing
-summary(mod_match_2NN)
-#Histogram
-plot(mod_match_2NN, type='hist')
-#plot(mod_match_2NN, type='QQ')
-z_out_2NN <- zelig(birth_y1 ~ eligible, data = match.data(mod_match_2NN), 
-                   model = 'ls')
-x_out_2NN <- setx(z_out_2NN, data = match.data(mod_match_2NN, "control"), cond = TRUE)
-s_out_2NN <- sim(z_out_2NN, x = x_out_2NN)
+data_1ch <- data_[which(data_$num_children==1),]
+mod_match_2NN_1ch <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                             method = 'nearest', data = data_1ch, discard='treat', reestimate=TRUE, 
+                             replace=TRUE, ratio=2) 
+plot(mod_match_2NN_1ch, type='hist')
 
-ATE_2NN <- c(s_out_2NN$qi$att.ev, -s_out_2NN$qi$att.ev)
-mean(ATE_2NN)
-sd(ATE_2NN)
-quantile(ATE_2NN, c(0.025, 0.975))
+ATT(mod_match_2NN_1ch)
 
 
+data_2ch <- data_[which(data_$num_children==2),]
+mod_match_2NN_2ch <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                               AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                             method = 'nearest', data = data_2ch, discard='treat', reestimate=TRUE, 
+                             replace=TRUE, ratio=2) 
+plot(mod_match_2NN_2ch, type='hist')
+ATT(mod_match_2NN_2ch)
 
+data_3ch <- data_[which(data_$num_children==3),]
+mod_match_2NN_3ch <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
+                               AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                             method = 'nearest', data = data_3ch, discard='treat', reestimate=TRUE, 
+                             replace=TRUE, ratio=2) 
+plot(mod_match_2NN_3ch, type='hist')
 
+ATT(mod_match_2NN_3ch)
 
 
 
