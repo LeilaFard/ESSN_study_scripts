@@ -22,7 +22,7 @@ nchildren_own <- function(year, month, data){
   a = data[which(data$age_w <= 18), 'assistance_no']
   ii <- read_individual_data(year, month, 'ineligible')
   enf <- setNames(data.frame(table(ii[which((ii$assistance_no%in%a)&(ii$age<6)), 'assistance_no'])), c('assistance_no', 'nc_own_2'))
-  data <- merge(data, enf, by='assistance_no')
+  data <- merge(data, enf, by='assistance_no', all.x=TRUE)
   data[['num_children_own']] <- rowSums(data[,c('nc_own_1', 'nc_own_2')], na.rm=TRUE)
   data$nc_own_1 <- NULL
   data$nc_own_2 <- NULL
@@ -30,10 +30,14 @@ nchildren_own <- function(year, month, data){
   return(data)
 }
 
-source(paste(tools, 'plots_discarded_comp.R', sep='/'))
+
 
 data_[['ineligible']] <- 1-data_$eligible
 data_ <- nchildren_own(year, month, data_)
+
+
+data_ <- data_[complete.cases(data_), ]
+source(paste(tools, 'plots_discarded_comp.R', sep='/'))
 
 # TODO: use t-tests within each strata to test if the distribution of X-variables is the same within both groups 
 

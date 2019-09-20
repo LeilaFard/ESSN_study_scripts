@@ -19,7 +19,8 @@ unique_f <- function(year, month, status){
   
   df_iff<- df_i[which(df_i$gender=='female' & df_i$age>=15 & df_i$age<49),]
   iffs <- df_iff[which(duplicated2(df_iff$assistance_no)==FALSE),]
-  iffs <-  setNames(data.frame(iffs$assistance_no, iffs$age), c('assistance_no', 'age_w'))
+  iffs$married <- (iffs$marital_status == 1)
+  iffs <-  setNames(data.frame(iffs$assistance_no, iffs$age, iffs$married), c('assistance_no', 'age_w', 'married'))
   
   return(iffs)
 }
