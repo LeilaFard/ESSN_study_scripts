@@ -19,7 +19,7 @@ unique_f <- function(year, month, status){
   
   df_iff<- df_i[which(df_i$gender=='female' & df_i$age>=15 & df_i$age<49),]
   iffs <- df_iff[which(duplicated2(df_iff$assistance_no)==FALSE),]
-  iffs <-  setNames(data.frame(iffs$assistance_no), c('assistance_no'))
+  iffs <-  setNames(data.frame(iffs$assistance_no, iffs$age), c('assistance_no', 'age_w'))
   
   return(iffs)
 }
@@ -29,6 +29,8 @@ unique_f_ids <- function(year, month){
   fff_i <- unique_f(year, month, 'ineligible')
   return(rbind(fff_i, fff_e))
 }
+
+
 
 
 #data_ <- data[sample(nrow(data), (nrow(data)/10)),]
@@ -53,7 +55,6 @@ births_y1 <- function(data){
   return(data)
 }
 
-
 full_preprocessed_dataset <- function(year, month){
   data_unique_f_y0 <- merge(matching_data_preprocess(year, month), unique_f_ids(year, month), by='assistance_no', all.y=TRUE)
   data_unique_f_y1 <-  merge(matching_data_preprocess(year+1, month), unique_f_ids(year+1, month), by='assistance_no', all.y=TRUE)
@@ -61,3 +62,5 @@ full_preprocessed_dataset <- function(year, month){
   data <- births_y1(data)
   return(data)
 }
+
+

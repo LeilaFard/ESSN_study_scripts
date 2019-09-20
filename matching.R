@@ -17,9 +17,23 @@ source(paste(tools, 'matching_preprocess.R', sep=''))
 
 data_ <- full_preprocessed_dataset(year, month)
 
+nchildren_own <- function(year, month, data){
+  data[which(data$age_w > 18), 'nc_own_1'] = data[which(data$age_w > 18), 'num_children']
+  a = data[which(data$age_w <= 18), 'assistance_no']
+  ii <- read_individual_data(year, month, 'ineligible')
+  enf <- setNames(data.frame(table(ii[which((ii$assistance_no%in%a)&(ii$age<6)), 'assistance_no'])), c('assistance_no', 'nc_own_2'))
+  data <- merge(data, enf, by='assistance_no')
+  data[['num_children_own']] <- rowSums(data[,c('nc_own_1', 'nc_own_2')], na.rm=TRUE)
+  data$nc_own_1 <- NULL
+  data$nc_own_2 <- NULL
+  
+  return(data)
+}
+
 source(paste(tools, 'plots_discarded_comp.R', sep='/'))
 
 data_[['ineligible']] <- 1-data_$eligible
+data_ <- nchildren_own(year, month, data_)
 
 # TODO: use t-tests within each strata to test if the distribution of X-variables is the same within both groups 
 
@@ -32,7 +46,6 @@ data_[['ineligible']] <- 1-data_$eligible
 ######### II - MATCHING
 
 
-
 ## Increase ratio -> bias/variance to compennsate replacement
 mod_match_2NN_att <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
                          AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
@@ -43,7 +56,6 @@ mod_match_2NN_tnt <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application
                                AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                              method = 'nearest', data = data_, discard='both', reestimate=TRUE, 
                              replace=TRUE, ratio=2) 
-
 
 
 # Post processing
@@ -81,8 +93,14 @@ treat_effect(mod_match_2NN_att)
 treat_effect(mod_match_2NN_tnt)
 
 
-#### ADD REGRESSION
 
+z.out1 <- zelig(birth_y1 ~ eligible, data = match.data(mod_match_2NN_tnt, "control"), model = "ls")
+
+x.out1 <- setx(z.out1, data = match.data(mod_match_2NN_tnt, "treat"), cond = TRUE)
+s.out1 <- sim(z.out1, x = x.out1)
+
+
+#### ADD REGRESSION
 
 
 ## Stratified
