@@ -19,7 +19,7 @@ unique_f <- function(year, month, status){
   
   df_iff<- df_i[which(df_i$gender=='female' & df_i$age>=15 & df_i$age<49),]
   iffs <- df_iff[which(duplicated2(df_iff$assistance_no)==FALSE),]
-  iffs$married <- (iffs$marital_status == 1)
+  iffs$married <- (iffs$marital_status == 'married')
   iffs <-  setNames(data.frame(iffs$assistance_no, iffs$age, iffs$married), c('assistance_no', 'age_w', 'married'))
   
   return(iffs)
@@ -48,7 +48,7 @@ births_y1 <- function(data){
   
   births_y1[['age']] <- NULL
   births_y1 <- births_y1 %>% dplyr::group_by(assistance_no) %>%
-    dplyr::summarise(birth_y1 = sum(birth_y1))
+               dplyr::summarise(birth_y1 = sum(birth_y1))
   
   data <- merge(data, births_y1[,c('assistance_no', 'birth_y1')], by='assistance_no', all.x=TRUE)
   data[which(is.na(data$birth_y1)), 'birth_y1'] <- 0 
@@ -58,8 +58,12 @@ births_y1 <- function(data){
 
 full_preprocessed_dataset <- function(year, month){
   data_unique_f_y0 <- merge(matching_data_preprocess(year, month), unique_f_ids(year, month), by='assistance_no', all.y=TRUE)
+  print(paste('Unique_f_y0: _ ineligible:', str(nrow(data_unique_f_y0[which(data_unique_f_y0$eligible==0),])))) 
+  print(paste('Unique_f_y0: _ eligible:',  str(nrow(data_unique_f_y0[which(data_unique_f_y0$eligible==1),]))))
   data_unique_f_y1 <-  merge(matching_data_preprocess(year+1, month), unique_f_ids(year+1, month), by='assistance_no', all.y=TRUE)
   data <- data_unique_f_y0[which(data_unique_f_y0$assistance_no %in% data_unique_f_y1$assistance_no),]
+  print(paste('data: _ ineligible:', str(nrow(data[which(data$eligible==0),])))) 
+  print(paste('data: _ eligible:',  str(nrow(data[which(data$eligible==1),]))))
   data <- births_y1(data)
   return(data)
 }

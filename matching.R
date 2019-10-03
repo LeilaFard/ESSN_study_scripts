@@ -1,4 +1,5 @@
 library(MatchIt)
+library(Zelig)
 
 # https://sejdemyr.github.io/r-tutorials/statistics/tutorial8.html
 # https://gking.harvard.edu/matchit
@@ -17,6 +18,8 @@ source(paste(tools, 'matching_preprocess.R', sep=''))
 
 data_ <- full_preprocessed_dataset(year, month)
 
+source(paste(tools, 'find_first_application.R', sep=''))
+
 nchildren_own <- function(year, month, data){
   data[which(data$age_w > 18), 'nc_own_1'] = data[which(data$age_w > 18), 'num_children']
   a = data[which(data$age_w <= 18), 'assistance_no']
@@ -29,8 +32,6 @@ nchildren_own <- function(year, month, data){
   
   return(data)
 }
-
-
 
 data_[['ineligible']] <- 1-data_$eligible
 data_ <- nchildren_own(year, month, data_)
@@ -68,49 +69,91 @@ summary(mod_match_2NN_tnt)
 #Histogram
 plot(mod_match_2NN_att, type='hist')
 plot(mod_match_2NN_tnt, type='hist')
-#plot(mod_match_2NN, type='QQ')
 
-treat_effect <- function(match_outputs_2NN){
-  m.data_2NN <- match.data(match_outputs_2NN, distance ='pscore')
-  m.data_2NN['index'] <- rownames(m.data_2NN)
+
+treat_effect_diff <- function(match_outputs_2NN){
+  match.data=match.data(match_outputs_2NN)
+  matches <- data.frame(match_outputs_2NN$match.matrix)
   
-  matched_ids <- data.frame(match_outputs_2NN$match.matrix)
-  matched_ids['X0'] <- rownames(matched_ids)
-  
-  outcomes.0 <- setNames(m.data_2NN[, c('index', 'birth_y1')], c('X0', 'birth_y1.0'))
-  outcomes.1 <- setNames(m.data_2NN[, c('index', 'birth_y1')], c('X1', 'birth_y1.1'))
-  outcomes.2 <- setNames(m.data_2NN[, c('index', 'birth_y1')], c('X2', 'birth_y1.2'))
-  
-  matched_data <- merge(matched_ids, outcomes.0, by='X0', all.x=TRUE)
-  matched_data <- merge(matched_data, outcomes.1, by='X1', all.x=TRUE)
-  matched_data <- merge(matched_data, outcomes.2, by='X2', all.x=TRUE)
-  
-  matched_data <- matched_data[complete.cases(matched_data), ]
-  
-  matched_data[['teffect']] <- matched_data$birth_y1.0 - (1/2)*matched_data$birth_y1.1 - (1/2)*matched_data$birth_y1.2
-  print(paste('Mean = ', mean(matched_data$teffect)))
-  print(paste('Std = ', sd(matched_data$teffect)))
-  print(paste('IC = [', paste(quantile(matched_data$teffect, c(0.025, 0.975)), collapse=' ; '), ']', sep=''))
+  group0<-match(row.names(matches),row.names((match.data)))
+  group1<-match(matches$X1,row.names(match.data))
+  group2<-match(matches$X2,row.names(match.data))
+  yT<-match.data$birth_y1[group0]
+  yC<-(match.data$birth_y1[group1]+match.data$birth_y1[group2])*(1/2)
+  matched.cases<-cbind(matches,yT,yC)
+  return(t.test(matched.cases$yT,matched.cases$yC,paired= TRUE))
 }
 
-treat_effect(mod_match_2NN_att)
-treat_effect(mod_match_2NN_tnt)
+treat_effect <- function(match_outputs_2NN){
+  match.data=match.data(match_outputs_2NN)
+  matches <- data.frame(match_outputs_2NN$match.matrix)
+  
+  group0<-match(row.names(matches),row.names((match.data)))
+  group1<-match(matches$X1,row.names(match.data))
+  group2<-match(matches$X2,row.names(match.data))
+  yT<-match.data$birth_y1[group0]
+  yC<-(match.data$birth_y1[group1]+match.data$birth_y1[group2])*(1/2)
+  matched.cases<-cbind(matches,yT,yC)
+  return(t.test(matched.cases$yT,matched.cases$yC,paired= TRUE))
+}
+
+ATT <- treat_effect(mod_match_2NN_att)
+TNT <- treat_effect(mod_match_2NN_tnt)
+
+####  REGRESSION
 
 
+match.data.att=match.data(mod_match_2NN_att)
+lm_treat1 <- lm(birth_y1 ~ eligible, data = match.data.att)
+out.tex = xtable(lm_treat1)
+print(out.tex, type='latex', file=paste(outputs_matching, 'lm_att_1.tex', sep='/'), compress = FALSE) 
+rm(out.tex)
 
-z.out1 <- zelig(birth_y1 ~ eligible, data = match.data(mod_match_2NN_tnt, "control"), model = "ls")
+lm_treat2 <- lm(birth_y1 ~ eligible + married + num_children_own + age_w + age_w*num_children_own, data = match.data.att)
 
-x.out1 <- setx(z.out1, data = match.data(mod_match_2NN_tnt, "treat"), cond = TRUE)
-s.out1 <- sim(z.out1, x = x.out1)
+out.tex = xtable(lm_treat2)
+print(out.tex, type='latex', file=paste(outputs_matching, 'lm_att_2.tex', sep='/'), compress = FALSE) 
+rm(out.tex)
 
-
-#### ADD REGRESSION
-
+match.data.tnt=match.data(mod_match_2NN_tnt)
+lm_treat1 <- lm(birth_y1 ~ ineligible, data = match.data.tnt)
+out.tex = xtable(lm_treat1)
+print(out.tex, type='latex', file=paste(outputs_matching, 'lm_tnt_1.tex', sep='/'), compress = FALSE) 
+rm(out.tex)
+match.data.tnt['ch2'] = match.data.tnt$num_children==2
+match.data.tnt['ch3'] = match.data.tnt$num_children==3
+lm_treat2 <- lm(birth_y1 ~ ineligible + married + num_children_own + age_w + age_w*num_children_own , data = match.data.tnt)
+out.tex = xtable(lm_treat2)
+print(out.tex, type='latex', file=paste(outputs_matching, 'lm_tnt_2.tex', sep='/'), compress = FALSE) 
+rm(out.tex)
 
 ## Stratified
 mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
                              AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit', method = 'subclass', 
                            data = data_, subclass=16, discard='both', reestimate=TRUE) 
+
+match.data.att['ch0'] = match.data.att$num_children==0
+match.data.att['ch1'] = match.data.att$num_children==1
+match.data.att['ch2'] = match.data.att$num_children==2
+match.data.att['ch3'] = match.data.att$num_children==3
+match.data.att['ch4'] = match.data.att$num_children==4
+match.data.att['ch5'] = match.data.att$num_children==5
+match.data.att['chsup'] = match.data.tnt$num_children>5
+lmtest <- lm(birth_y1 ~ ineligible + married + num_children_own + age_w + ch0+ch1+ch2+ch3+ch4+ch5+chsup, data = match.data.att)
+summary(lmtest)
+
+
+
+data_['ch0'] = data_$num_children==0
+data_['ch1'] = data_$num_children==1
+data_['ch2'] = data_$num_children==2
+data_['ch3'] = data_$num_children==3
+data_['ch4'] = data_$num_children==4
+data_['ch5'] = data_$num_children==5
+data_['chsup'] = data_$num_children>5
+lmtest <- lm(birth_y1 ~ married+ ch0+ch1+ch3+ch4+ch5+chsup + age_w , data = data_[which(data_$eligible==1),]) #
+summary(lmtest)
+
 
 # Post processing
 summary(mod_match_strat)
