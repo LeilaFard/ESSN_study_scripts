@@ -72,10 +72,10 @@ intervalle_intergenesique <- function(df){
   ### BASE DES INDIVIDUS: ON SE RESTREINT AUX FAMILLES NUCLEAIRES
   #df <- read_individual_data(year, month, dataframe)
   #isolement des menages ou il y a une seule femme en age de procreer
-  df_ff<- df[which(df$gender=='female' & df$age>=15 & df$age<45),]
+  df_ff <- df[which(df$gender=='female' & df$age>=15 & df$age<45),]
   df_ffs <- df_ff[which(duplicated2(df_ff$assistance_no)==FALSE),]
   #on met en reserve les identifants menages ou il n' y a qu une seule femme en age fecond
-  no_hh <-  plyr::rename(data.frame(df_ffs$assistance_no), c('df_ffs.assistance_no'='assistance_no'))
+  no_hh <- plyr::rename(data.frame(df_ffs$assistance_no), c('df_ffs.assistance_no'='assistance_no'))
   
   ### Databases
   df_children <- merge(df, no_hh, by='assistance_no', all=FALSE)
@@ -114,3 +114,20 @@ intervalle_intergenesique <- function(df){
   
   return(c(M_1_2, M_2_3, M_3_4))
 }
+
+
+## Nationalities
+
+
+add_nationality <- function(df){
+  nationalities <- read.csv(paste(data_path, 'Master Data/Countries.csv', sep='/'), sep=',')
+  nationalities[['nat_country']] = 'Other'
+  nationalities[which(nationalities$code=='AF'), 'nat_country'] = 'Afghanistan'
+  nationalities[which(nationalities$code=='IQ'), 'nat_country'] = 'Iraq'
+  # nationalities[which(nationalities$code=='IR'), 'nat_country'] = 'Iran'
+  nationalities[which(nationalities$code=='SY'), 'nat_country'] = 'Syria'
+  nationalities <- setNames(nationalities,c('nationality_id', 'name', 'code', 'mernis_code', 'active', 'nat_country'))
+  df <- merge(x=df, y=nationalities[,c('nationality_id', 'nat_country')], all.x=TRUE)
+  return(df)
+}
+
