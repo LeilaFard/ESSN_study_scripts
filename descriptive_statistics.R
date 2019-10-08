@@ -40,7 +40,7 @@ fff_i = own_children(ii)
 # Preprocess
 Text_e = paste('Total fertility rate of eligible =',round(sum(fff_e$tf, na.rm=TRUE),2))
 Text_i = paste('Total fertility rate of ineligible =',round(sum(fff_i$tf, na.rm=TRUE),2))
-fff_e$cat = 'eligible'
+ fff_e$cat = 'eligible'
 fff_i$cat = 'ineligible'
 fff = bind_rows(fff_e, fff_i)
 # Nettoyage 
