@@ -41,28 +41,20 @@ data_ <- data_[complete.cases(data_),]
 print(paste('data (complete cases): _ ineligible:', str(nrow(data_[which(data_$eligible==0),])))) 
 print(paste('data (complete cases): _ eligible:',  str(nrow(data_[which(data_$eligible==1),]))))
 
+outputs_matching = 'C:/Users/lfardeau/Documents/ESSN/Outputs/PsMatch_test/2018/4/TestNoreg'
 
 source(paste(tools, 'plots_discarded_comp.R', sep='/'))
 
 
 # STATS ON COVARIATES
 desc_stats_covariates <- function(data){
-  todesc =  data[, c('eligible', 'AC_1', 'AC_6', 'months_since_application', 'nat_country', 'Reg', 'AG_1', 'AG_2', 'AG_3', 'AG_4', 'AG_5')]
+  todesc =  data[, c('eligible', 'AC_1', 'AC_6', 'months_since_application', 'nat_country', 'AG_1', 'AG_2', 'AG_3', 'AG_4', 'AG_5')]
   
-  todesc$Afghanistan =ifelse(todesc$nat_country=='Afghanistan', 1, 0)
-  todesc$Iraq =ifelse(todesc$nat_country=='Iraq', 1, 0)
-  todesc$Other =ifelse(todesc$nat_country=='Other', 1, 0)
-  todesc$Syria =ifelse(todesc$nat_country=='Syria', 1, 0)
+  todesc$Afghanistan = ifelse(todesc$nat_country=='Afghanistan', 1, 0)
+  todesc$Iraq = ifelse(todesc$nat_country=='Iraq', 1, 0)
+  todesc$Other = ifelse(todesc$nat_country=='Other', 1, 0)
+  todesc$Syria = ifelse(todesc$nat_country=='Syria', 1, 0)
   todesc$nat_country <- NULL
-  
-  todesc$AG  =ifelse(todesc$Reg=='AG', 1, 0)
-  todesc$BS =ifelse(todesc$Reg=='BS', 1, 0)
-  todesc$CA =ifelse(todesc$Reg=='CA', 1, 0)
-  todesc$EA =ifelse(todesc$Reg=='EA', 1, 0)
-  todesc$MD =ifelse(todesc$Reg=='MD', 1, 0)
-  todesc$MM =ifelse(todesc$Reg=='MM', 1, 0)
-  todesc$SE =ifelse(todesc$Reg=='SE', 1, 0)
-  todesc$Reg <- NULL
   
   todesc_C <- todesc[which(todesc$eligible==0),]
   todesc_C$eligible <- NULL 
@@ -86,7 +78,7 @@ desc_stats_covariates <- function(data){
   des$delta = (des$mean_t-des$mean_c)/sqrt(des$sd_t^2+des$sd_c^2)
   
   return(des)
-
+  
 }
 
 des <- desc_stats_covariates(data_)
@@ -164,8 +156,8 @@ reg_with_covariates <- function(match_outputs, name){
 }
 
 ## Increase ratio -> bias/variance to compennsate replacement
-mod_match_2NN_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                       AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                              AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                             method = 'nearest', data = data_, discard='both', reestimate=TRUE, 
                             replace=TRUE, ratio=2)
 
@@ -186,8 +178,8 @@ reg_with_covariates(mod_match_2NN_T1, '2NN_T1')
 
 
 
-mod_match_2NN_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                         AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                              AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                             method = 'nearest', data = data_, discard='both', reestimate=TRUE, 
                             replace=TRUE, ratio=2)
 
@@ -220,8 +212,8 @@ reg_with_covariates2 <- function(match_outputs, name){
 #### T1
 
 data_1ch <- data_[which(data_$num_children==1),]
-mod_match_2NN_1ch_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                           AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_1ch_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                                  AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                                 method = 'nearest', data = data_1ch, discard='treat', reestimate=TRUE, 
                                 replace=TRUE, ratio=2) 
 
@@ -239,8 +231,8 @@ reg_with_covariates2(mod_match_2NN_1ch_T1, '2NN_1ch_T1')
 
 
 data_2ch <- data_[which(data_$num_children==2),]
-mod_match_2NN_2ch_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                           AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_2ch_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                                  AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                                 method = 'nearest', data = data_2ch, discard='treat', reestimate=TRUE, 
                                 replace=TRUE, ratio=2) 
 
@@ -259,10 +251,10 @@ reg_with_covariates2(mod_match_2NN_2ch_T1, '2NN_2ch_T1')
 
 
 data_3ch <- data_[which(data_$num_children==3),]
-mod_match_2NN_3ch_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                               AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
-                             method = 'nearest', data = data_3ch, discard='treat', reestimate=TRUE, 
-                             replace=TRUE, ratio=2) 
+mod_match_2NN_3ch_T1 <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                                  AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                                method = 'nearest', data = data_3ch, discard='treat', reestimate=TRUE, 
+                                replace=TRUE, ratio=2) 
 des <- desc_stats_covariates(match.data(mod_match_2NN_3ch_T1))
 
 out.tex = xtable(des)
@@ -278,8 +270,8 @@ reg_with_covariates2(mod_match_2NN_3ch_T1, '2NN_3ch_T1')
 
 #### T0
 
-mod_match_2NN_1ch_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_1ch_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country +  
+                                  AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                                 method = 'nearest', data = data_1ch, discard='treat', reestimate=TRUE, 
                                 replace=TRUE, ratio=2) 
 des <- desc_stats_covariates(match.data(mod_match_2NN_1ch_T0))
@@ -295,8 +287,8 @@ reg_no_covariates(mod_match_2NN_1ch_T0, '2NN_1ch_T0')
 reg_with_covariates2(mod_match_2NN_1ch_T0, '2NN_1ch_T0')
 
 
-mod_match_2NN_2ch_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_2ch_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                                  AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                                 method = 'nearest', data = data_2ch, discard='treat', reestimate=TRUE, 
                                 replace=TRUE, ratio=2) 
 des <- desc_stats_covariates(match.data(mod_match_2NN_2ch_T0))
@@ -312,8 +304,8 @@ reg_no_covariates(mod_match_2NN_2ch_T0, '2NN_2ch_T0')
 reg_with_covariates2(mod_match_2NN_2ch_T0, '2NN_2ch_T0')
 
 
-mod_match_2NN_3ch_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+mod_match_2NN_3ch_T0 <- matchit(ineligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                                  AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
                                 method = 'nearest', data = data_3ch, discard='treat', reestimate=TRUE, 
                                 replace=TRUE, ratio=2) 
 des <- desc_stats_covariates(match.data(mod_match_2NN_3ch_T0))
@@ -329,9 +321,9 @@ reg_no_covariates(mod_match_2NN_3ch_T0, '2NN_3ch_T0')
 reg_with_covariates2(mod_match_2NN_3ch_T0, '2NN_3ch_T0')
 
 # BLOCKING
-mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
-                                      AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit', method = 'subclass', 
-                                      data = data_, subclass=16, discard='both', reestimate=TRUE) 
+mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + 
+                             AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit', method = 'subclass', 
+                           data = data_, subclass=16, discard='both', reestimate=TRUE) 
 
 plot(mod_match_strat, type='hist')
 data.sub <- match.data(mod_match_strat)

@@ -13,7 +13,7 @@ source(paste(tools, 'format_data.R', sep='/'))
 source(paste(tools, 'stats_des_preprocess.R', sep='/'))
 
 
-year = 2018
+year = 2019
 month = 4
 
 
@@ -114,10 +114,12 @@ ac <- function(df){
 }
 
 AC_df = rbind(he[,c('AC_1', 'AC_2', 'AC_3', 'AC_4', 'AC_5', 'AC_6')], hi[,c('AC_1', 'AC_2', 'AC_3', 'AC_4', 'AC_5', 'AC_6')])
-col <- lm(AC_5 ~ AC_1 + AC_2 + AC_3 + AC_4 + AC_6, data=AC_df)
+
+
+cor <- cor(AC_df)
 #summary(col)
-out.tex = xtable(col)
-print(out.tex, type='latex', file=paste(outputs_tables_path, 'AC5col.tex', sep='/'), compress = FALSE) 
+out.tex = xtable(cor)
+print(out.tex, type='latex', file=paste(outputs_tables_path, 'ACcor.tex', sep='/'), compress = FALSE) 
 rm(out.tex)
 
 #ac(he)
@@ -169,11 +171,13 @@ plot <- ggplot(data=intervalle_intergenesique, aes(x=enfants, y=mean, fill=eligi
         geom_bar(stat='identity', position=position_dodge()) +
         scale_fill_manual('Eligibility', values=c('grey','black'), labels=c('Eligible', 'Ineligible'))+
         labs(title = paste('Interval between two births, ', paste(year, month, sep='/'),sep=' '), x= '', y = 'Interval in months' ) + 
+        coord_flip() +
+        theme(legend.position='top')+
         theme_light()
 
 
 ggsave(filename = paste(outputs_graph_path, 'intervalle_intergenesique.png', sep='/'), plot,
-       width = 7, height = 10, dpi = 300, units = 'in', device='png')
+       width = 10, height = 5, dpi = 300, units = 'in', device='png')
 
 rm(plot)
 
@@ -213,6 +217,37 @@ p = grid.arrange(p1, p2, nrow = 2)
 ggsave(filename = paste(outputs_graph_path, 'age_pyramid.png', sep='/'), p,
        width = 7, height = 10, dpi = 300, units = 'in', device='png')
 
+age_pyramid2 <- function(df_i, status){
+  #on discetise la variable age en tranches de 10 ans
+  df_i$cut.age <- cut(df_i$age,include.lowest = TRUE,right=FALSE,seq(0,100,5))
+  #on trace la pyramide
+  gg2 <-  ggplot(df_i) +
+    aes(x=cut.age,fill=gender) + geom_bar(data = subset(df_i,gender=='male'),aes(y=..count..*(-1))) + # les valeurs deviennent negatives
+    geom_bar(data = subset(df_i,gender=='female')) +
+    scale_fill_manual('Gender', values=c('grey','black'), labels=c('Female', 'Male'))+
+    # Etiquettes pour l'axe des x, a modifier selon vos donnees.
+    coord_flip() + 
+    labs(title = paste(status,' age structure ', paste(year, month, sep='/'),sep=' ') ,
+         subtitle = 'Thousands of individuals',
+         x = 'Age', y = 'Frequency' ) + # Titres des axes
+    scale_y_continuous(breaks = c(-1.5e+05, -1.25e+05, -1e+05, -7.5e+04, -5e+04, -2.5e04, 0, 2.5e+04, 5e+04, 7.5e04, 1e+05, 1.25e+05, 1.5e+05),
+                       labels = c('150', '125', '100', '75', '50', '25', '0', '25', '50', '75', '100', '125', '150'),
+                       limits = c(-1.5e+05, 1.5e+05)) +
+    scale_x_discrete(breaks=c('[0,5)', '[5,10)', '[10,15)', '[15,20)', '[20,25)', '[25,30)', '[30,35)', '[35,40)', '[40,45)','[45,50)',
+                              '[50,55)', '[55,60)', '[60,65)', '[65,70)', '[70,75)', '[75,80)', '[80,85)', '[85,90)', '[90,95)', '[95,100]'), 
+                     labels=c('0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', 
+                              '60-64', '65-69', '70-74', '75-79', '80-84', '85-89', '90-94', '95-99')) +
+    theme_light()  # Theme simple, ideal pour publication
+  return(gg2)
+}
+
+p1 = plot(age_pyramid2(ie, 'Eligibles'))
+p2 = plot(age_pyramid2(ii, 'Ineligibles'))
+p = grid.arrange(p1, p2, nrow = 2)
+
+
+ggsave(filename = paste(outputs_graph_path, 'age_pyramid2.png', sep='/'), p,
+       width = 7, height = 10, dpi = 300, units = 'in', device='png')
 
 #
 #   Months since application
@@ -233,15 +268,14 @@ d_e <- data.frame(table(he$months_since_application))
 d_e[['eligible']] = 'eligible'
 d_i <- data.frame(table(hi$months_since_application))
 d_i[['eligible']] = 'ineligible'
-d  <- rbind(d_e, d_i)
+d <- rbind(d_e, d_i)
 rm(d_e, d_i)
 
 p <- ggplot(data=d, aes(x=Var1, y=Freq, fill=eligible)) + 
-  geom_bar(stat='identity', position=position_dodge()) +
-  scale_fill_manual('Eligibility', values=c('grey','black'), labels=c('Eligible', 'Ineligible'))+
-  labs(title = 'Months since first application by eligible status', x= 'Months since first application', y = 'Number of housholds' ) + 
-  theme_light()
-
+     geom_bar(stat='identity', position=position_dodge()) +
+     scale_fill_manual('Eligibility', values=c('grey','black'), labels=c('Eligible', 'Ineligible'))+
+     labs(title = 'Months since first application by eligible status', x='Months since first application', y='Number of housholds' ) + 
+     theme_light()
 
 ggsave(filename = paste(outputs_graph_path, 'months_since_application.png', sep='/'), p,
        width = 7, height = 5, dpi = 300, units = 'in', device='png')
@@ -389,7 +423,7 @@ ggsave(filename = paste(outputs_graph_path, 'map_children_by_hh.png', sep='/'), 
 nat_data <- function(df){
   df <- add_nationality(df)
   nat <- data.frame(table(df$nat_country))
-  nat[['Pct']] = 100 * (nat$Freq / sum(nat$Freq) )
+  nat[['Pct']] = round(100 * (nat$Freq / sum(nat$Freq)), 2)
   return(nat)
   }
 
@@ -400,14 +434,15 @@ df_i[['eligible']] = FALSE
 df = rbind(df_e,df_i)
 
 
-p <- ggplot() +
-     geom_bar(aes(y = Pct, x = eligible, fill = Var1), data = df,
-                 stat='identity')+
+p <- ggplot(aes(y = Pct, x = eligible, fill = Var1), data = df) +
+     geom_bar(stat='identity')+
+     geom_text(aes(label=paste(Pct, '%')), data=df, stat='identity',position=position_stack(vjust = .5)) +
+     coord_flip() +
      scale_fill_manual(values = c( '#D16103',  '#52854C', '#4E84C4', '#C4961A')) 
 
 
 ggsave(filename = paste(outputs_graph_path, 'nat.png', sep='/'), p,
-       width = 7, height = 5, dpi = 300, units = 'in', device='png')
+       width = 12, height = 5, dpi = 300, units = 'in', device='png')
 
 #  
 #  Origines ethniques et  nombre d'enfants
