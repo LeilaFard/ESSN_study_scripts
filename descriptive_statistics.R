@@ -129,6 +129,19 @@ rm(out.tex)
 #  FERTILITY (1) :  OWN CHILDREN METHOD
 ############################################ 
 
+<<<<<<< HEAD
+# Calcul du taux de fecondite par age 
+fff_e = own_children(ie)
+fff_i = own_children(ii)
+# Preprocess
+Text_e = paste('Total fertility rate of eligible =',round(sum(fff_e$tf, na.rm=TRUE),2))
+Text_i = paste('Total fertility rate of ineligible =',round(sum(fff_i$tf, na.rm=TRUE),2))
+ fff_e$cat = 'eligible'
+fff_i$cat = 'ineligible'
+fff = bind_rows(fff_e, fff_i)
+# Nettoyage 
+rm(fff_e, fff_i)
+=======
 preprocess_own_ch_graph <- function(df_i, cat){
   # Calcul du taux de fecondite par age 
   fff_ = own_children(df_i)
@@ -142,6 +155,7 @@ text_own_ch_graph <- function(df_i, cat){
 }
 
 
+>>>>>>> 332892b3e5c2a0b983c560612bdcd652901d2a07
 # Graph
 plot <- ggplot(bind_rows(preprocess_own_ch_graph(ie, 'eligible'), preprocess_own_ch_graph(ii, 'ineligible'))) + 
         aes(x=age) + geom_point(aes(y=tf, shape=cat)) + scale_shape_manual(values=c(16, 1))+

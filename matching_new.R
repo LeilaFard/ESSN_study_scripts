@@ -107,15 +107,23 @@ data_['ch5'] = data_$num_children==5
 data_['chsup'] = data_$num_children>5
 
 
+<<<<<<< HEAD
 lmnaive_el <- lm(birth_y1 ~ married + ch1+ ch2 + ch3 + ch4 + ch5 + chsup + age_w  + nat_country, data = data_[which(data_$eligible==1),]) #
+=======
+lmnaive_el <- lm(birth_y1 ~ married + ch1+ ch2 + ch3 + ch4 + ch5 + chsup + age_w  +  nat_country, data = data_[which(data_$eligible==1),]) #
+>>>>>>> refs/remotes/origin/master
 summary(lmnaive_el)
-out.tex = xtable(lmnaive_el)
+out.tex = xtable(summary(lmnaive_el))
 print(out.tex, type='latex', file=paste(outputs_matching, '/lm_naive_el.tex', sep=''), compress = FALSE) 
 rm(out.tex)
 
+<<<<<<< HEAD
 lmnaive_inel <- lm(birth_y1 ~ married + ch1+ ch2 + ch3 + ch4 + ch5 + chsup + age_w  + nat_country, data = data_[which(data_$eligible==0),]) #
+=======
+lmnaive_inel <- lm(birth_y1 ~ married + ch1+ ch2 + ch3 + ch4 + ch5 + chsup + age_w + nat_country, data = data_[which(data_$eligible==0),]) #
+>>>>>>> refs/remotes/origin/master
 summary(lmnaive_inel)
-out.tex = xtable(lmnaive_inel)
+out.tex = xtable(summary(lmnaive_inel))
 print(out.tex, type='latex', file=paste(outputs_matching, '/lm_naive_inel.tex', sep=''), compress = FALSE) 
 rm(out.tex)
 
