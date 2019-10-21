@@ -96,21 +96,33 @@ intervalle_intergenesique <- function(df){
   birth_1_2 <- merge(plyr::rename(df_children[which(df_children$child_rank==1),][c('assistance_no', 'date_of_birth')], c('date_of_birth'='birth_child1')), 
                      birth_2, by='assistance_no', all=FALSE)
   birth_1_2$int <- interval(ymd(birth_1_2$birth_child1), ymd(birth_1_2$birth_child2)) %/% months(1)
-  M_1_2 <- mean(birth_1_2$int)
+  
+  birth_1_2[which(birth_1_2[['int']]>168), 'int'] = NA
+  birth_1_2[which(birth_1_2[['int']]<10), 'int'] = NA
+  
+  M_1_2 <- mean(birth_1_2$int, na.rm = TRUE)
   
   birth_3 <- plyr::rename(born_during_program[which(born_during_program$child_rank==3),][c('assistance_no', 'date_of_birth')],
                           c('date_of_birth'='birth_child3'))
   birth_2_3 <- merge(plyr::rename(df_children[which(df_children$child_rank==2),][c('assistance_no', 'date_of_birth')], c('date_of_birth'='birth_child2')), 
                      birth_3, by='assistance_no', all=FALSE)
   birth_2_3$int <- interval(ymd(birth_2_3$birth_child2), ymd(birth_2_3$birth_child3)) %/% months(1)
-  M_2_3 <- mean(birth_2_3$int)
+  
+  birth_2_3[which(birth_2_3[['int']]>168), 'int'] = NA
+  birth_2_3[which(birth_2_3[['int']]<10), 'int'] = NA
+  
+  M_2_3 <- mean(birth_2_3$int, na.rm = TRUE)
   
   birth_4 <- plyr::rename(born_during_program[which(born_during_program$child_rank==4),][c('assistance_no', 'date_of_birth')],
                           c('date_of_birth'='birth_child4'))
   birth_3_4 <- merge(plyr::rename(df_children[which(df_children$child_rank==3),][c('assistance_no', 'date_of_birth')], c('date_of_birth'='birth_child3')), 
                      birth_4, by='assistance_no', all=FALSE)
   birth_3_4$int <- interval(ymd(birth_3_4$birth_child3), ymd(birth_3_4$birth_child4)) %/% months(1)
-  M_3_4 <- mean(birth_3_4$int)
+  
+  birth_3_4[which(birth_3_4[['int']]>168), 'int'] = NA
+  birth_3_4[which(birth_3_4[['int']]<10), 'int'] = NA
+  
+  M_3_4 <- mean(birth_3_4$int, na.rm = TRUE)
   
   return(c(M_1_2, M_2_3, M_3_4))
 }

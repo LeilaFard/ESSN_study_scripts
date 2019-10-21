@@ -1,5 +1,6 @@
 library(MatchIt)
 library(Zelig)
+library(lubridate)
 
 # https://sejdemyr.github.io/r-tutorials/statistics/tutorial8.html
 # https://gking.harvard.edu/matchit
@@ -50,8 +51,6 @@ full_preprocessed_dataset <- function(year, month){
 }
 
 
-data_ <- full_preprocessed_dataset(year, month)
-
 source(paste(tools, 'find_first_application.R', sep=''))
 
 nchildren_own <- function(year, month, data){
@@ -68,8 +67,32 @@ nchildren_own <- function(year, month, data){
 }
 
 
+data_ <- full_preprocessed_dataset(year, month)
 data_[['ineligible']] <- 1-data_$eligible
 data_ <- nchildren_own(year, month, data_)
+
+data_[['month']] = month
+data_[['year']] = year
+
+dates = list(c(3,2019), c(2,2019), c(1,2019), c(12,2018), c(11, 2018), c(10, 2018), c(9,2018), c(8,2018), c(7,2018), c(6,2018), c(5, 2018), c(4,2018))
+for (d in dates){
+  month = d[[1]]
+  year = d[[2]]
+  data <- full_preprocessed_dataset(year, month)
+  data[['ineligible']] <- 1-data$eligible
+  data <- nchildren_own(year, month, data)
+  data <- data[which(!data$assistance_no%in%data_$assistance_no),]
+  
+  data[['month']] = month
+  data[['year']] = year
+  
+  data_ <- rbind(data_, data)
+}
+
+for (int in list('int1', 'int2', 'int3')){
+  data_[which(data_[[int]]>168), int] = NA
+  data_[which(data_[[int]]<10), int] = NA
+}
 
 
 data_i1 <- data_[which(!is.na(data_$int1)),]
@@ -95,6 +118,7 @@ data_i3 <- plyr::rename(data_i3, c('int3'='int'))
 
 
 desc_stats_covariates <- function(data){
+  
   todesc =  data[, c('eligible', 'AC_1', 'months_since_application', 'nat_country', 'Reg', 'AG_1', 'AG_2', 'AG_3', 'AG_4', 'AG_5')]
   
   todesc$Afghanistan =ifelse(todesc$nat_country=='Afghanistan', 1, 0)
@@ -212,7 +236,7 @@ rm(out.tex)
 
 plot(mod_match_2NN_int1, type='hist')
 
-difference_in_means(mod_match_2NN_int1)
+#difference_in_means(mod_match_2NN_int1)
 reg_no_covariates(mod_match_2NN_int1, '2NN_int1_T1')
 reg_with_covariates(mod_match_2NN_int1, '2NN_int1_T1')
 
@@ -225,7 +249,7 @@ rm(out.tex)
 
 plot(mod_match_2NN_int2, type='hist')
 
-difference_in_means(mod_match_2NN_int2)
+#difference_in_means(mod_match_2NN_int2)
 reg_no_covariates(mod_match_2NN_int2, '2NN_int2_T1')
 reg_with_covariates(mod_match_2NN_int2, '2NN_int2_T1')
 
@@ -238,7 +262,67 @@ rm(out.tex)
 
 plot(mod_match_2NN_int3, type='hist')
 
-difference_in_means(mod_match_2NN_int3)
+#difference_in_means(mod_match_2NN_int3)
 reg_no_covariates(mod_match_2NN_int3, '2NN_int3_T1')
 reg_with_covariates(mod_match_2NN_int3, '2NN_int3_T1')
+
+
+### TO
+
+## Increase ratio -> bias/variance to compennsate replacement
+mod_match_2NN_int1_0 <- matchit(ineligible ~ AC_1 + months_since_application + nat_country + Reg +
+                                AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                              method = 'nearest', data = data_i1, discard='both', reestimate=TRUE, 
+                              replace=TRUE, ratio=2)
+
+mod_match_2NN_int2_0 <- matchit(ineligible ~ AC_1 +months_since_application + nat_country + Reg +
+                                AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                              method = 'nearest', data = data_i2, discard='both', reestimate=TRUE, 
+                              replace=TRUE, ratio=2)
+
+mod_match_2NN_int3_0 <- matchit(ineligible ~ AC_1 + months_since_application + nat_country + Reg +
+                                AG_1 + AG_2 + AG_3 + AG_4 + AG_5 ,  distance = 'logit',
+                              method = 'nearest', data = data_i3, discard='both', reestimate=TRUE, 
+                              replace=TRUE, ratio=2)
+
+
+des <- desc_stats_covariates(match.data(mod_match_2NN_int1_0))
+
+out.tex = xtable(des)
+print(out.tex, type='latex', file=paste(outputs_matching, '/desc_match_2NN_i1_T0.tex', sep=''), compress = FALSE, include.rownames=FALSE) 
+rm(out.tex)
+
+plot(mod_match_2NN_int1_0, type='hist')
+
+#difference_in_means(mod_match_2NN_int1)
+reg_no_covariates(mod_match_2NN_int1_0, '2NN_int1_T0')
+reg_with_covariates(mod_match_2NN_int1_0, '2NN_int1_T0')
+
+
+
+des <- desc_stats_covariates(match.data(mod_match_2NN_int2_0))
+out.tex = xtable(des)
+print(out.tex, type='latex', file=paste(outputs_matching, '/desc_match_2NN_i2_T0.tex', sep=''), compress = FALSE, include.rownames=FALSE) 
+rm(out.tex)
+
+plot(mod_match_2NN_int2_0, type='hist')
+
+#difference_in_means(mod_match_2NN_int2)
+reg_no_covariates(mod_match_2NN_int2, '2NN_int2_T0')
+reg_with_covariates(mod_match_2NN_int2, '2NN_int2_T0')
+
+
+
+des <- desc_stats_covariates(match.data(mod_match_2NN_int3_0))
+out.tex = xtable(des)
+print(out.tex, type='latex', file=paste(outputs_matching, '/desc_match_2NN_i3_T0.tex', sep=''), compress = FALSE, include.rownames=FALSE) 
+rm(out.tex)
+
+plot(mod_match_2NN_int3_0, type='hist')
+
+#difference_in_means(mod_match_2NN_int3)
+reg_no_covariates(mod_match_2NN_int3_0, '2NN_int3_T0')
+reg_with_covariates(mod_match_2NN_int3_0, '2NN_int3_T0')
+
+
 

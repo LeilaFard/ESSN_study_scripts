@@ -316,7 +316,7 @@ for(s in 1:max(data.sub$subclass)){
   tmp <- lm(birth_y1 ~ eligible, data=data.sub, subset=subclass==s)
   sub.effect[s] <- tmp$coef[2]
   sub.var[s] <- summary(tmp)$coef[2,2]^2 
-  sub.N[s] <- sum(data.sub$subclass==s) }
+  sub.N[s] <- sum(data.sub$subclass==s) } 
 # Calculate overall ATE effect
 sum((sub.N/N)*sub.effect)
 sqrt(sum((sub.N/N)^2*sub.var))
