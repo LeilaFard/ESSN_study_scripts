@@ -288,6 +288,38 @@ reg_no_covariates(mod_match_2NN_3ch_T1, '2NN_3ch_T1')
 reg_with_covariates2(mod_match_2NN_3ch_T1, '2NN_3ch_T1')
 
 
+
+
+#### Des
+
+des <- desc_stats_covariates(data_3ch)
+
+out.tex = xtable(des)
+print(out.tex, type='latex', file=paste(outputs_matching, '/desc_raw_2NN_3ch.tex', sep=''), compress = FALSE, include.rownames=FALSE) 
+rm(out.tex)
+
+#### Naive regressions 
+
+print(mean(data_[which(data_3ch$eligible==1), 'birth_y1']))
+print(mean(data_[which(data_3ch$eligible==0), 'birth_y1']))
+print(mean(data_[which(data_3ch$eligible==1), 'birth_y1'])-mean(data_1ch[which(data_3ch$eligible==0), 'birth_y1']))
+
+lm_naive <- lm(birth_y1 ~ eligible, data = data_3ch)
+out.tex = xtable(lm_naive)
+print(out.tex, type='latex', file=paste(outputs_matching, '/lmnaive_nocov_data_3ch.tex', sep=''), compress = FALSE) 
+rm(out.tex)
+summary(lm_naive)
+
+lm_naive <- lm(birth_y1 ~ eligible + married + age_w + nat_country, data = data_3ch)
+out.tex = xtable(lm_naive)
+print(out.tex, type='latex', file=paste(outputs_matching, '/lmnaive_cov_data_3ch.tex', sep=''), compress = FALSE) 
+rm(out.tex)
+summary(lm_naive)
+
+
+
+
+
 # BLOCKING
 mod_match_strat <- matchit(eligible ~ AC_1 + AC_6 + months_since_application + nat_country + Reg +
                              AG_1 + AG_2 + AG_3 + AG_4 + AG_5 , distance = 'logit', method = 'subclass', 

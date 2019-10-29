@@ -204,7 +204,7 @@ difference_in_means <- function(match_outputs){
   group1<-match(matches$X1,row.names(match.data))
   group2<-match(matches$X2,row.names(match.data))
   yT<-match.data$int[group0]
-  yC<-(match.data$int[group1]+match.data$birth_y1[group2])*(1/2)
+  yC<-(match.data$int[group1]+match.data$int[group2])*(1/2)
   matched.cases<-cbind(matches,yT,yC)
   return(t.test(matched.cases$yT,matched.cases$yC,paired= TRUE))
 }
@@ -239,7 +239,6 @@ plot(mod_match_2NN_int1, type='hist')
 #difference_in_means(mod_match_2NN_int1)
 reg_no_covariates(mod_match_2NN_int1, '2NN_int1_T1')
 reg_with_covariates(mod_match_2NN_int1, '2NN_int1_T1')
-
 
 
 des <- desc_stats_covariates(match.data(mod_match_2NN_int2))
@@ -294,7 +293,7 @@ rm(out.tex)
 
 plot(mod_match_2NN_int1_0, type='hist')
 
-#difference_in_means(mod_match_2NN_int1)
+difference_in_means(mod_match_2NN_int1)
 reg_no_covariates(mod_match_2NN_int1_0, '2NN_int1_T0')
 reg_with_covariates(mod_match_2NN_int1_0, '2NN_int1_T0')
 
@@ -307,22 +306,19 @@ rm(out.tex)
 
 plot(mod_match_2NN_int2_0, type='hist')
 
-#difference_in_means(mod_match_2NN_int2)
+difference_in_means(mod_match_2NN_int2)
 reg_no_covariates(mod_match_2NN_int2, '2NN_int2_T0')
 reg_with_covariates(mod_match_2NN_int2, '2NN_int2_T0')
 
 
-
-des <- desc_stats_covariates(match.data(mod_match_2NN_int3_0))
-out.tex = xtable(des)
-print(out.tex, type='latex', file=paste(outputs_matching, '/desc_match_2NN_i3_T0.tex', sep=''), compress = FALSE, include.rownames=FALSE) 
-rm(out.tex)
-
-plot(mod_match_2NN_int3_0, type='hist')
-
+#des <- desc_stats_covariates(match.data(mod_match_2NN_int3_0))
+#out.tex = xtable(des)
+#print(out.tex, type='latex', file=paste(outputs_matching, '/desc_match_2NN_i3_T0.tex', sep=''), compress = FALSE, include.rownames=FALSE) 
+#rm(out.tex)
+#plot(mod_match_2NN_int3_0, type='hist')
 #difference_in_means(mod_match_2NN_int3)
-reg_no_covariates(mod_match_2NN_int3_0, '2NN_int3_T0')
-reg_with_covariates(mod_match_2NN_int3_0, '2NN_int3_T0')
+#reg_no_covariates(mod_match_2NN_int3_0, '2NN_int3_T0')
+#reg_with_covariates(mod_match_2NN_int3_0, '2NN_int3_T0')
 
 
 

@@ -13,7 +13,7 @@ source(paste(tools, 'format_data.R', sep='/'))
 source(paste(tools, 'stats_des_preprocess.R', sep='/'))
 
 
-year = 2019
+year = 2018
 month = 4
 
 
