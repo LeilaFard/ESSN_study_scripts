@@ -85,7 +85,7 @@ rm(p)
 
 # Graph AC prevalence
 
-AC_graph <- function(data_hh){
+AC_graph <- function(data_hh, legend=TRUE){
   data <- setNames(data.frame((colSums(data_hh[,c('AC_1', 'AC_2', 'AC_3', 'AC_4', 'AC_5', 'AC_6')]) / nrow(data_hh))*100),
                    c('Percentage'))
   data[['AC']] <- rownames(data)
@@ -100,11 +100,23 @@ AC_graph <- function(data_hh){
   return(p)
 }
 
-ggsave(filename = paste(outputs_graph_path, 'ac_eligibles.png', sep='/'), AC_graph(he),
-       width = 5, height = 5, dpi = 300, units = 'in', device='png')
 
-ggsave(filename = paste(outputs_graph_path, 'ac_ineligibles.png', sep='/'), AC_graph(hi),
-       width = 5, height = 5, dpi = 300, units = 'in', device='png')
+
+p1 = plot(AC_graph(he, legend=FALSE))
+p2 = plot(AC_graph(hi, legend=NULL))
+p = grid.arrange(p1, p2, nrow = 1, widths=c(0.9,1.1))
+
+
+ggsave(filename = paste(outputs_graph_path, 'AC.png', sep='/'), p,
+       width = 10, height = 5, dpi = 300, units = 'in', device='png')
+
+
+
+#ggsave(filename = paste(outputs_graph_path, 'ac_eligibles.png', sep='/'), AC_graph(he),
+#       width = 5, height = 5, dpi = 300, units = 'in', device='png')
+
+#ggsave(filename = paste(outputs_graph_path, 'ac_ineligibles.png', sep='/'), AC_graph(hi),
+#       width = 5, height = 5, dpi = 300, units = 'in', device='png')
 
 # At least 2 AC
 ac <- function(df){
@@ -129,7 +141,6 @@ rm(out.tex)
 #  FERTILITY (1) :  OWN CHILDREN METHOD
 ############################################ 
 
-<<<<<<< HEAD
 # Calcul du taux de fecondite par age 
 fff_e = own_children(ie)
 fff_i = own_children(ii)
@@ -141,7 +152,7 @@ fff_i$cat = 'ineligible'
 fff = bind_rows(fff_e, fff_i)
 # Nettoyage 
 rm(fff_e, fff_i)
-=======
+
 preprocess_own_ch_graph <- function(df_i, cat){
   # Calcul du taux de fecondite par age 
   fff_ = own_children(df_i)
@@ -155,7 +166,6 @@ text_own_ch_graph <- function(df_i, cat){
 }
 
 
->>>>>>> 332892b3e5c2a0b983c560612bdcd652901d2a07
 # Graph
 plot <- ggplot(bind_rows(preprocess_own_ch_graph(ie, 'eligible'), preprocess_own_ch_graph(ii, 'ineligible'))) + 
         aes(x=age) + geom_point(aes(y=tf, shape=cat)) + scale_shape_manual(values=c(16, 1))+
@@ -225,25 +235,26 @@ age_pyramid <- function(df_i, status){
 
 p1 = plot(age_pyramid(ie, 'Eligibles'))
 p2 = plot(age_pyramid(ii, 'Ineligibles'))
-p = grid.arrange(p1, p2, nrow = 2)
+p = grid.arrange(p1, p2, nrow = 1)
 
 
 ggsave(filename = paste(outputs_graph_path, 'age_pyramid.png', sep='/'), p,
-       width = 7, height = 10, dpi = 300, units = 'in', device='png')
+       width = 10, height = 10, dpi = 300, units = 'in', device='png')
 
-age_pyramid2 <- function(df_i, status){
+age_pyramid2 <- function(df_i, status, legend=TRUE){
   #on discetise la variable age en tranches de 10 ans
   df_i$cut.age <- cut(df_i$age,include.lowest = TRUE,right=FALSE,seq(0,100,5))
   #on trace la pyramide
   gg2 <-  ggplot(df_i) +
     aes(x=cut.age,fill=gender) + geom_bar(data = subset(df_i,gender=='male'),aes(y=..count..*(-1))) + # les valeurs deviennent negatives
     geom_bar(data = subset(df_i,gender=='female')) +
-    scale_fill_manual('Gender', values=c('grey','black'), labels=c('Female', 'Male'))+
+    scale_fill_manual('Gender', values=c('grey','black'), labels=c('Female', 'Male'), guide=legend)+ #, guide=FALSE
     # Etiquettes pour l'axe des x, a modifier selon vos donnees.
     coord_flip() + 
     labs(title = paste(status,' age structure ', paste(year, month, sep='/'),sep=' ') ,
          subtitle = 'Thousands of individuals',
          x = 'Age', y = 'Frequency' ) + # Titres des axes
+    #expand_limits(x = c(-1.5e+05, 1.5e+05))+
     scale_y_continuous(breaks = c(-1.5e+05, -1.25e+05, -1e+05, -7.5e+04, -5e+04, -2.5e04, 0, 2.5e+04, 5e+04, 7.5e04, 1e+05, 1.25e+05, 1.5e+05),
                        labels = c('150', '125', '100', '75', '50', '25', '0', '25', '50', '75', '100', '125', '150'),
                        limits = c(-1.5e+05, 1.5e+05)) +
@@ -255,13 +266,13 @@ age_pyramid2 <- function(df_i, status){
   return(gg2)
 }
 
-p1 = plot(age_pyramid2(ie, 'Eligibles'))
-p2 = plot(age_pyramid2(ii, 'Ineligibles'))
-p = grid.arrange(p1, p2, nrow = 2)
+p1 = plot(age_pyramid2(ie, 'Eligibles', legend=FALSE))
+p2 = plot(age_pyramid2(ii, 'Ineligibles', legend=TRUE))
+p = grid.arrange(p1, p2, nrow = 1, widths=c(0.8,1.2))
 
 
 ggsave(filename = paste(outputs_graph_path, 'age_pyramid2.png', sep='/'), p,
-       width = 7, height = 10, dpi = 300, units = 'in', device='png')
+       width = 15, height = 5, dpi = 300, units = 'in', device='png')
 
 #
 #   Months since application
